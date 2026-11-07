@@ -1,0 +1,54 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+
+/**
+ * Navbar Component
+ * Displays the Airbnb brand logo, home link, and user navigation placeholders.
+ */
+export default function Navbar() {
+  return (
+    <header className="navbar">
+      <div className="navbar-container">
+        {/* Brand / Logo */}
+        <Link to="/" className="navbar-brand" aria-label="Airbnb Home">
+          <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="presentation" focusable="false">
+            <path d="M16 1c2.008 0 3.463.963 4.751 3.269l.533 1.025c1.954 3.83 6.114 12.54 7.1 14.836l.145.353c.667 1.591.91 2.472.96 3.396l.011.315c0 4.502-3.328 7.806-7.79 7.806-3.213 0-5.698-1.748-6.71-4.475-1.012 2.727-3.497 4.475-6.71 4.475C3.808 32 .48 28.696.48 24.194c0-.986.257-1.92.793-3.228l.178-.423c.986-2.296 5.146-11.006 7.1-14.836l.533-1.025C10.377 2.373 11.992 1 16 1zm0 2c-1.528 0-2.61.64-3.61 2.428l-.515.99c-1.94 3.801-6.079 12.463-7.054 14.737l-.156.37c-.503 1.229-.725 1.99-.765 2.669C3.856 27.818 6.425 30 9.71 30c2.81 0 4.965-1.637 5.61-4.053l.115-.499.565-2.023.565 2.023c.56 2.003 2.502 3.857 5.176 4.472l.434.08c3.285 0 5.854-2.182 5.81-5.806-.04-.679-.262-1.44-.765-2.669l-.156-.37c-.975-2.274-5.114-10.936-7.054-14.737l-.515-.99C17.61 3.64 16.528 3 16 3zm0 13c2.761 0 5 2.239 5 5 0 2.296-1.554 4.228-3.666 4.823L17 26h-2l-.334-.177C12.554 25.228 11 23.296 11 21c0-2.761 2.239-5 5-5zm0 2c-1.657 0-3 1.343-3 3 0 1.304.834 2.413 2 2.83V23h2v-1.17c1.166-.417 2-1.526 2-2.83 0-1.657-1.343-3-3-3z" />
+          </svg>
+          <span>airbnb</span>
+        </Link>
+
+        {/* Navigation & User Actions */}
+        <div className="navbar-menu">
+          <Link to="/" className="nav-link">
+            Explore
+          </Link>
+          <button
+            type="button"
+            className="nav-link"
+            onClick={() => alert('Host features are coming in an upcoming module!')}
+          >
+            Airbnb your home
+          </button>
+
+          {/* User profile pill */}
+          <div
+            className="user-menu-btn"
+            title="User Profile (Auth coming in next module)"
+            onClick={() => alert('Login & Register modal will be connected in the authentication module!')}
+            role="button"
+            tabIndex={0}
+          >
+            <svg viewBox="0 0 32 32" width="16" height="16" fill="currentColor">
+              <path d="M4 8h24v2H4zm0 7h24v2H4zm0 7h24v2H4z" />
+            </svg>
+            <div className="user-avatar-placeholder">
+              <svg viewBox="0 0 32 32" width="16" height="16" fill="currentColor">
+                <path d="M16 2a7 7 0 1 0 0 14 7 7 0 0 0 0-14zm0 18c-7.33 0-14 3.67-14 11v1h28v-1c0-7.33-6.67-11-14-11z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
