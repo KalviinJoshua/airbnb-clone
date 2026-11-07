@@ -1,5 +1,8 @@
+const mongoose = require('mongoose');
 const Booking = require('../models/Booking');
 const Listing = require('../models/Listing');
+
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 /**
  * createBooking
@@ -18,6 +21,12 @@ const createBooking = async (req, res, next) => {
       });
     }
 
+    if (!isValidObjectId(listingId)) {
+      return res.status(404).json({
+        message: 'Listing not found.',
+      });
+    }
+
     // 2. Verify that the listing exists
     const listing = await Listing.findById(listingId);
     if (!listing) {
@@ -32,13 +41,22 @@ const createBooking = async (req, res, next) => {
 
     if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) {
       return res.status(400).json({
-        message: 'Invalid check-in or check-out date.',
+        message: 'Invalid check-in or check-out date format.',
       });
     }
 
     // Normalize checkIn and checkOut to calendar dates at midnight
     checkInDate.setHours(0, 0, 0, 0);
     checkOutDate.setHours(0, 0, 0, 0);
+
+    // Validate that checkIn is not in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (checkInDate < today) {
+      return res.status(400).json({
+        message: 'Check-in date cannot be in the past.',
+      });
+    }
 
     // Ensure checkOut is strictly later than checkIn
     if (checkOutDate <= checkInDate) {
@@ -99,10 +117,9 @@ const createBooking = async (req, res, next) => {
  */
 const getBookings = async (req, res, next) => {
   try {
-    const bookings = await Booking.find({ user: req.user.id }).populate(
-      'listing',
-      'title location pricePerNight images'
-    );
+    const bookings = await Booking.find({ user: req.user.id })
+      .populate('listing', 'title location pricePerNight images')
+      .sort({ createdAt: -1 });
 
     return res.status(200).json({
       bookings,
@@ -119,6 +136,12 @@ const getBookings = async (req, res, next) => {
  */
 const getBookingById = async (req, res, next) => {
   try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(404).json({
+        message: 'Booking not found.',
+      });
+    }
+
     const booking = await Booking.findById(req.params.id).populate(
       'listing',
       'title location pricePerNight images'
@@ -157,6 +180,12 @@ const getBookingById = async (req, res, next) => {
  */
 const updateBooking = async (req, res, next) => {
   try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(404).json({
+        message: 'Booking not found.',
+      });
+    }
+
     const booking = await Booking.findById(req.params.id);
     if (!booking) {
       return res.status(404).json({
@@ -183,13 +212,22 @@ const updateBooking = async (req, res, next) => {
 
     if (isNaN(newCheckIn.getTime()) || isNaN(newCheckOut.getTime())) {
       return res.status(400).json({
-        message: 'Invalid check-in or check-out date.',
+        message: 'Invalid check-in or check-out date format.',
       });
     }
 
     // Normalize checkIn and checkOut to calendar dates at midnight
     newCheckIn.setHours(0, 0, 0, 0);
     newCheckOut.setHours(0, 0, 0, 0);
+
+    // Validate that checkIn is not in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (newCheckIn < today) {
+      return res.status(400).json({
+        message: 'Check-in date cannot be in the past.',
+      });
+    }
 
     // Ensure checkOut is strictly later than checkIn
     if (newCheckOut <= newCheckIn) {
@@ -254,6 +292,12 @@ const updateBooking = async (req, res, next) => {
  */
 const deleteBooking = async (req, res, next) => {
   try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(404).json({
+        message: 'Booking not found.',
+      });
+    }
+
     const booking = await Booking.findById(req.params.id);
     if (!booking) {
       return res.status(404).json({

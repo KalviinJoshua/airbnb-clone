@@ -3,32 +3,97 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User.js');
 
 /**
+ * Helper to check whether an email or secret qualifies for host privileges
+ */
+const isAuthorizedForHostRole = (email, secretCode) => {
+  // 1. Check if matching the configured host registration secret
+  const configuredSecret = process.env.HOST_REGISTRATION_SECRET;
+  if (configuredSecret && secretCode && secretCode.trim() === configuredSecret.trim()) {
+    return true;
+  }
+
+  // 2. Check if the user's email is on the explicitly whitelisted host list
+  const trustedEmailsRaw = process.env.TRUSTED_HOST_EMAILS || '';
+  const trustedEmails = trustedEmailsRaw
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+
+  if (trustedEmails.length > 0 && trustedEmails.includes(email.toLowerCase())) {
+    return true;
+  }
+
+  return false;
+};
+
+/**
  * registerUser
- * Async controller for user registration.
- * Expects req.body with name, email, password.
+ * Controller for user registration.
+ *
+ * Security Fix: Public registration strictly defaults to 'user' (guest) role.
+ * Host elevation requires either a valid hostSecretCode or an email pre-whitelisted
+ * in TRUSTED_HOST_EMAILS in the environment configuration.
  */
 const registerUser = async (req, res, next) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, hostSecretCode } = req.body;
 
-    // 1. Validate that all fields are provided
-    if (!name || !email || !password) {
-      const error = new Error('Name, email, and password are required.');
-      error.statusCode = 400;
-      return next(error);
+    // 1. Validate that all required fields are provided and are valid strings
+    if (
+      !name ||
+      typeof name !== 'string' ||
+      !email ||
+      typeof email !== 'string' ||
+      !password ||
+      typeof password !== 'string'
+    ) {
+      return res.status(400).json({
+        message: 'Name, email, and password are required strings.',
+      });
+    }
+
+    const trimmedName = name.trim();
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!trimmedName) {
+      return res.status(400).json({
+        message: 'Name cannot be blank.',
+      });
+    }
+
+    // Basic email format check
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(normalizedEmail)) {
+      return res.status(400).json({
+        message: 'Please provide a valid email address.',
+      });
     }
 
     // 2. Validate password length (min 8 characters)
     if (password.length < 8) {
-      const error = new Error('Password must be at least 8 characters long.');
-      error.statusCode = 400;
-      return next(error);
+      return res.status(400).json({
+        message: 'Password must be at least 8 characters long.',
+      });
     }
 
-    // Normalize email: trim whitespace and convert to lowercase
-    const normalizedEmail = email.trim().toLowerCase();
+    // 3. Determine role safely:
+    // Arbitrary role submissions cannot grant host access.
+    // Host credentials must be verified before making any database queries.
+    let assignedRole = 'user';
 
-    // 3. Check if the email already exists
+    if (role === 'host' || hostSecretCode) {
+      if (isAuthorizedForHostRole(normalizedEmail, hostSecretCode)) {
+        assignedRole = 'host';
+      } else {
+        // If the client explicitly requested host without valid credentials
+        return res.status(403).json({
+          message:
+            'Host authorization failed. A valid host passcode or pre-approved email is required to register with the host role.',
+        });
+      }
+    }
+
+    // 4. Check if the email already exists
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return res.status(409).json({
@@ -36,22 +101,25 @@ const registerUser = async (req, res, next) => {
       });
     }
 
-    // 4. Hash the password with 12 salt rounds
+    // 5. Hash the password with 12 salt rounds
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // 5. Create and save the new user (supports 'user' or 'host' role)
+    // 6. Create and save the new user
     const newUser = new User({
-      name,
+      name: trimmedName,
       email: normalizedEmail,
       password: hashedPassword,
-      role: role === 'host' ? 'host' : 'user',
+      role: assignedRole,
     });
 
     await newUser.save();
 
-    // 6. Return 201 with user data (password excluded by schema)
+    // 7. Return 201 with created user data
     return res.status(201).json({
-      message: 'User registered successfully.',
+      message:
+        assignedRole === 'host'
+          ? 'Host account registered successfully.'
+          : 'User registered successfully.',
       user: {
         _id: newUser._id,
         name: newUser.name,
@@ -60,30 +128,32 @@ const registerUser = async (req, res, next) => {
       },
     });
   } catch (error) {
-    // Handle MongoDB duplicate-key error (11000) for the email unique index
     if (error.code === 11000) {
       return res.status(409).json({
         message: 'Email already registered.',
       });
     }
-    // Pass all other errors to the error-handling middleware
     next(error);
   }
 };
 
 /**
  * loginUser
- * Async controller for user authentication.
- * Expects req.body with email, password.
+ * Controller for user authentication.
  */
 const loginUser = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    // 1. Validate that both email and password are provided
-    if (!email || !password) {
+    // 1. Validate that both email and password are provided as strings
+    if (
+      !email ||
+      typeof email !== 'string' ||
+      !password ||
+      typeof password !== 'string'
+    ) {
       return res.status(400).json({
-        message: 'Email and password are required.',
+        message: 'Email and password are required strings.',
       });
     }
 
@@ -117,7 +187,7 @@ const loginUser = async (req, res, next) => {
     const token = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
 
     // 7. Return 200 with token and user details (excluding password)
@@ -132,7 +202,69 @@ const loginUser = async (req, res, next) => {
       },
     });
   } catch (error) {
-    // Pass unexpected errors to the global error-handling middleware
+    next(error);
+  }
+};
+
+/**
+ * upgradeToHost
+ * Protected route controller allowing an authenticated guest user to elevate to the host role.
+ * Requires either a valid hostSecretCode or an email listed in TRUSTED_HOST_EMAILS.
+ */
+const upgradeToHost = async (req, res, next) => {
+  try {
+    const { hostSecretCode } = req.body;
+    const userId = req.user.id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        message: 'User account not found.',
+      });
+    }
+
+    if (user.role === 'host') {
+      return res.status(200).json({
+        message: 'Account is already configured as a Host.',
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
+      });
+    }
+
+    // Validate authorization
+    if (!isAuthorizedForHostRole(user.email, hostSecretCode)) {
+      return res.status(403).json({
+        message:
+          'Invalid host passcode. Please verify your administrative host credentials to unlock hosting privileges.',
+      });
+    }
+
+    // Elevate role
+    user.role = 'host';
+    await user.save();
+
+    // Issue refreshed JWT token reflecting the updated role
+    const newToken = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    );
+
+    return res.status(200).json({
+      message: 'Account successfully upgraded to Host! You can now create and manage property listings.',
+      token: newToken,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (error) {
     next(error);
   }
 };
@@ -140,4 +272,5 @@ const loginUser = async (req, res, next) => {
 module.exports = {
   registerUser,
   loginUser,
+  upgradeToHost,
 };

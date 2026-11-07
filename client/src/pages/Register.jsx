@@ -4,13 +4,18 @@ import { useAuth } from '../context/AuthContext';
 
 /**
  * Register Page Component
- * Allows new users to create an account and authenticate immediately.
+ * Allows new users to create an account.
+ *
+ * Security Fix:
+ * Public registrations default to the Guest role ('user').
+ * Users registering with Host privileges must provide an authorized Host Passcode.
  */
 export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('user');
+  const [isHostRegistration, setIsHostRegistration] = useState(false);
+  const [hostSecretCode, setHostSecretCode] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -47,9 +52,15 @@ export default function Register() {
       return;
     }
 
+    if (isHostRegistration && !hostSecretCode.trim()) {
+      setError('Please provide your Host invitation passcode or uncheck the Host option.');
+      return;
+    }
+
     try {
       setIsSubmitting(true);
-      await register(name.trim(), email.trim(), password, role);
+      const role = isHostRegistration ? 'host' : 'user';
+      await register(name.trim(), email.trim(), password, role, hostSecretCode.trim());
       navigate(from, { replace: true });
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
@@ -63,7 +74,7 @@ export default function Register() {
       <div className="auth-card">
         <div className="auth-header">
           <h1 className="auth-title">Create an account</h1>
-          <p className="auth-subtitle">Join Airbnb to book stays around the world</p>
+          <p className="auth-subtitle">Join Airbnb to discover and book stays worldwide</p>
         </div>
 
         {error && (
@@ -118,7 +129,7 @@ export default function Register() {
               id="password"
               type="password"
               className="form-input"
-              placeholder="Create a password"
+              placeholder="Create a strong password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="new-password"
@@ -126,35 +137,40 @@ export default function Register() {
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label">I want to use Airbnb as:</label>
-            <div className="role-selector-group">
-              <label className={`role-option-card ${role === 'user' ? 'active' : ''}`}>
-                <input
-                  type="radio"
-                  name="role"
-                  value="user"
-                  checked={role === 'user'}
-                  onChange={() => setRole('user')}
-                  className="role-radio"
-                />
-                <span className="role-option-title">Guest</span>
-                <span className="role-option-desc">Book stays & travel</span>
-              </label>
+          {/* Controlled Host Privilege Option */}
+          <div className="host-invitation-box">
+            <label className="host-checkbox-label">
+              <input
+                type="checkbox"
+                checked={isHostRegistration}
+                onChange={(e) => setIsHostRegistration(e.target.checked)}
+                className="host-checkbox"
+              />
+              <span className="host-checkbox-text">
+                Register as a Property Host (requires authorized passcode)
+              </span>
+            </label>
 
-              <label className={`role-option-card ${role === 'host' ? 'active' : ''}`}>
+            {isHostRegistration && (
+              <div className="form-group" style={{ marginTop: '12px' }}>
+                <label htmlFor="hostSecret" className="form-label">
+                  Host Passcode
+                </label>
                 <input
-                  type="radio"
-                  name="role"
-                  value="host"
-                  checked={role === 'host'}
-                  onChange={() => setRole('host')}
-                  className="role-radio"
+                  id="hostSecret"
+                  type="password"
+                  className="form-input"
+                  placeholder="Enter administrator host passcode"
+                  value={hostSecretCode}
+                  onChange={(e) => setHostSecretCode(e.target.value)}
+                  autoComplete="off"
+                  required={isHostRegistration}
                 />
-                <span className="role-option-title">Host</span>
-                <span className="role-option-desc">List & host properties</span>
-              </label>
-            </div>
+                <span className="host-invitation-hint">
+                  Host access allows listing homes and managing property reservations. Standard accounts can upgrade anytime.
+                </span>
+              </div>
+            )}
           </div>
 
           <button

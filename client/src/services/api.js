@@ -1,9 +1,27 @@
 /**
  * API Service for communicating with the Airbnb Clone backend.
- * Base URL defaults to http://localhost:5000/api or reads from VITE_API_URL.
+ *
+ * Production Readiness:
+ * - Uses VITE_API_URL for the deployed backend URL.
+ * - In production builds, removes hardcoded localhost fallback assumptions.
+ * - In development mode, falls back to http://localhost:5000/api for developer ergonomics.
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const rawApiUrl = import.meta.env.VITE_API_URL;
+const isDev = Boolean(import.meta.env.DEV);
+
+// Clean trailing slashes if present
+export const API_BASE_URL = rawApiUrl
+  ? rawApiUrl.replace(/\/+$/, '')
+  : isDev
+  ? 'http://localhost:5000/api'
+  : '';
+
+if (!API_BASE_URL && !isDev) {
+  console.warn(
+    '[CONFIG WARNING] VITE_API_URL environment variable is not defined in production build. Please configure VITE_API_URL in your Vercel project settings.'
+  );
+}
 
 /**
  * Helper to retrieve the stored JWT authentication token.
@@ -56,11 +74,11 @@ async function request(endpoint, options = {}, requiresAuth = false) {
 
     return data;
   } catch (error) {
-    // If the browser fails to connect (server down or network disconnected)
+    // If the browser fails to connect (server sleeping, network down, or wrong URL)
     if (error.name === 'TypeError' && error.message.toLowerCase().includes('fetch')) {
+      const target = API_BASE_URL || 'the backend API';
       const networkError = new Error(
-        'Unable to reach the backend server. Please ensure the server is running on ' +
-          API_BASE_URL
+        `Unable to reach the backend server (${target}). If the backend is hosted on a free tier (e.g. Render), it may take 30–60 seconds to wake up from spin-down. Please retry momentarily.`
       );
       networkError.isNetworkError = true;
       throw networkError;
@@ -70,11 +88,11 @@ async function request(endpoint, options = {}, requiresAuth = false) {
 }
 
 /* ==========================================================================
-   Authentication Endpoints (Public)
+   Authentication Endpoints
    ========================================================================== */
 
 /**
- * Authenticate user with email and password.
+ * Authenticate user with email and password. (Public)
  * @param {Object} credentials - { email, password }
  * @returns {Promise<{ message: string, token: string, user: Object }>}
  */
@@ -90,8 +108,10 @@ export async function loginUser(credentials) {
 }
 
 /**
- * Register a new user account.
- * @param {Object} userData - { name, email, password, role }
+ * Register a new user account. (Public)
+ * Note: By default, accounts are created with the 'user' role.
+ * Optional hostSecretCode can be supplied to request host privileges.
+ * @param {Object} userData - { name, email, password, role, hostSecretCode }
  * @returns {Promise<{ message: string, user: Object }>}
  */
 export async function registerUser(userData) {
@@ -102,6 +122,22 @@ export async function registerUser(userData) {
       body: JSON.stringify(userData),
     },
     false
+  );
+}
+
+/**
+ * Upgrade authenticated user to the Host role. (Protected - Requires JWT)
+ * @param {string} hostSecretCode - Host authorization passcode
+ * @returns {Promise<{ message: string, token: string, user: Object }>}
+ */
+export async function upgradeToHost(hostSecretCode) {
+  return request(
+    '/auth/upgrade-to-host',
+    {
+      method: 'POST',
+      body: JSON.stringify({ hostSecretCode }),
+    },
+    true
   );
 }
 
@@ -129,7 +165,7 @@ export async function fetchListingById(id) {
 }
 
 /**
- * Create a new property listing. (Protected - Host only)
+ * Create a new property listing. (Protected - Host role required)
  * @param {Object} listingData - { title, description, location, pricePerNight, images }
  * @returns {Promise<{ message: string, listing: Object }>}
  */
@@ -145,7 +181,7 @@ export async function createListing(listingData) {
 }
 
 /**
- * Update an existing property listing. (Protected - Host only)
+ * Update an existing property listing. (Protected - Host owner required)
  * @param {string} id - Listing ObjectId
  * @param {Object} listingData - { title, description, location, pricePerNight, images }
  * @returns {Promise<{ message: string, listing: Object }>}
@@ -162,7 +198,7 @@ export async function updateListing(id, listingData) {
 }
 
 /**
- * Delete a property listing. (Protected - Host only)
+ * Delete a property listing. (Protected - Host owner required)
  * @param {string} id - Listing ObjectId
  * @returns {Promise<{ message: string }>}
  */

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { loginUser, registerUser } from '../services/api';
+import { loginUser, registerUser, upgradeToHost as apiUpgradeToHost } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -55,13 +55,28 @@ export function AuthProvider({ children }) {
   };
 
   /**
-   * Register a new account and automatically log in
+   * Register a new account and automatically log in.
+   * Public registrations default safely to 'user' unless authorized with a host passcode.
    */
-  const register = async (name, email, password, role = 'user') => {
-    const regData = await registerUser({ name, email, password, role });
+  const register = async (name, email, password, role = 'user', hostSecretCode = '') => {
+    const regData = await registerUser({ name, email, password, role, hostSecretCode });
     // After registration, authenticate immediately to obtain JWT token
     const loginData = await login(email, password);
     return { ...regData, ...loginData };
+  };
+
+  /**
+   * Upgrade an authenticated user's account to Host using host credentials.
+   */
+  const upgradeToHost = async (hostSecretCode) => {
+    const data = await apiUpgradeToHost(hostSecretCode);
+    if (data.token && data.user) {
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      setToken(data.token);
+      setUser(data.user);
+    }
+    return data;
   };
 
   /**
@@ -82,6 +97,7 @@ export function AuthProvider({ children }) {
     loading,
     login,
     register,
+    upgradeToHost,
     logout,
   };
 

@@ -2051,4 +2051,67 @@ main {
   .reviews-grid {
     grid-template-columns: 1fr;
   }
+
+  .bookings-grid {
+    grid-template-columns: 1fr;
+  }
 }
+
+/* ==========================================================================
+   Module 5: Role Security & Production Polish Styles
+   ========================================================================== */
+
+.host-invitation-box {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-top: 4px;
+  transition: border-color 0.2s ease;
+}
+
+.host-invitation-box:hover {
+  border-color: var(--border-medium);
+}
+
+.host-checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.host-checkbox {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.host-checkbox-text {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.host-invitation-hint {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+/* Smooth Focus & Accessibility Enhancements */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+

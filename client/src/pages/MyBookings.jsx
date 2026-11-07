@@ -238,8 +238,12 @@ export default function MyBookings() {
                   <div className="booking-card-media">
                     <img
                       src={imageSrc}
-                      alt={listing.title || 'Listing'}
+                      alt={`Reserved accommodation: ${listing.title || 'stay'}`}
                       className="booking-card-image"
+                      loading="lazy"
+                      decoding="async"
+                      width="400"
+                      height="200"
                       onError={(e) => {
                         e.target.src = FALLBACK_IMAGE;
                       }}

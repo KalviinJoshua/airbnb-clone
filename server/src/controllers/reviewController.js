@@ -1,6 +1,9 @@
+const mongoose = require('mongoose');
 const Review = require('../models/Review');
 const Booking = require('../models/Booking');
 const Listing = require('../models/Listing');
+
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 /**
  * createReview
@@ -23,11 +26,30 @@ const createReview = async (req, res, next) => {
       });
     }
 
+    if (!isValidObjectId(listingId)) {
+      return res.status(404).json({
+        message: 'Listing not found.',
+      });
+    }
+
     // 2. Validate rating range (1 to 5)
     const numericRating = Number(rating);
-    if (isNaN(numericRating) || numericRating < 1 || numericRating > 5) {
+    if (isNaN(numericRating) || numericRating < 1 || numericRating > 5 || !Number.isInteger(numericRating)) {
       return res.status(400).json({
-        message: 'Rating must be a number between 1 and 5.',
+        message: 'Rating must be an integer between 1 and 5.',
+      });
+    }
+
+    // Validate comment string
+    if (typeof comment !== 'string' || !comment.trim()) {
+      return res.status(400).json({
+        message: 'Comment must be a non-empty string.',
+      });
+    }
+
+    if (comment.trim().length > 2000) {
+      return res.status(400).json({
+        message: 'Comment cannot exceed 2000 characters.',
       });
     }
 
@@ -70,7 +92,7 @@ const createReview = async (req, res, next) => {
       listing: listingId,
       user: req.user.id,
       rating: numericRating,
-      comment: typeof comment === 'string' ? comment.trim() : comment,
+      comment: comment.trim(),
     });
 
     await review.save();
@@ -98,10 +120,15 @@ const getListingReviews = async (req, res, next) => {
   try {
     const { listingId } = req.params;
 
-    const reviews = await Review.find({ listing: listingId }).populate(
-      'user',
-      'name'
-    );
+    if (!isValidObjectId(listingId)) {
+      return res.status(404).json({
+        message: 'Listing not found.',
+      });
+    }
+
+    const reviews = await Review.find({ listing: listingId })
+      .populate('user', 'name')
+      .sort({ createdAt: -1 });
 
     return res.status(200).json({
       reviews,
@@ -123,6 +150,12 @@ const getListingReviews = async (req, res, next) => {
  */
 const getReviewById = async (req, res, next) => {
   try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(404).json({
+        message: 'Review not found.',
+      });
+    }
+
     const review = await Review.findById(req.params.id).populate('user', 'name');
     if (!review) {
       return res.status(404).json({
@@ -151,6 +184,12 @@ const getReviewById = async (req, res, next) => {
  */
 const updateReview = async (req, res, next) => {
   try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(404).json({
+        message: 'Review not found.',
+      });
+    }
+
     const review = await Review.findById(req.params.id);
     if (!review) {
       return res.status(404).json({
@@ -176,9 +215,14 @@ const updateReview = async (req, res, next) => {
     // Validate rating if provided
     if (rating !== undefined) {
       const numericRating = Number(rating);
-      if (isNaN(numericRating) || numericRating < 1 || numericRating > 5) {
+      if (
+        isNaN(numericRating) ||
+        numericRating < 1 ||
+        numericRating > 5 ||
+        !Number.isInteger(numericRating)
+      ) {
         return res.status(400).json({
-          message: 'Rating must be a number between 1 and 5.',
+          message: 'Rating must be an integer between 1 and 5.',
         });
       }
       review.rating = numericRating;
@@ -186,12 +230,17 @@ const updateReview = async (req, res, next) => {
 
     // Validate comment if provided
     if (comment !== undefined) {
-      if (!comment || (typeof comment === 'string' && !comment.trim())) {
+      if (typeof comment !== 'string' || !comment.trim()) {
         return res.status(400).json({
           message: 'Comment cannot be empty.',
         });
       }
-      review.comment = typeof comment === 'string' ? comment.trim() : comment;
+      if (comment.trim().length > 2000) {
+        return res.status(400).json({
+          message: 'Comment cannot exceed 2000 characters.',
+        });
+      }
+      review.comment = comment.trim();
     }
 
     await review.save();
@@ -217,6 +266,12 @@ const updateReview = async (req, res, next) => {
  */
 const deleteReview = async (req, res, next) => {
   try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(404).json({
+        message: 'Review not found.',
+      });
+    }
+
     const review = await Review.findById(req.params.id);
     if (!review) {
       return res.status(404).json({

@@ -14,6 +14,8 @@ export default function PropertyMap({ location, title }) {
   // 1. Geocode location query using OpenStreetMap Nominatim
   useEffect(() => {
     let isMounted = true;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
 
     async function geocodeLocation() {
       if (!location || !location.trim()) {
@@ -27,6 +29,7 @@ export default function PropertyMap({ location, title }) {
         const response = await fetch(
           `https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`,
           {
+            signal: controller.signal,
             headers: {
               'Accept': 'application/json',
             },
@@ -52,9 +55,11 @@ export default function PropertyMap({ location, title }) {
         }
       } catch (err) {
         if (isMounted) {
-          // If network failed or geocoding is rate-limited, fail gracefully
+          // If network failed, aborted, or geocoding is rate-limited, fail gracefully
           setMapStatus('fallback');
         }
+      } finally {
+        clearTimeout(timeoutId);
       }
     }
 
@@ -62,6 +67,8 @@ export default function PropertyMap({ location, title }) {
 
     return () => {
       isMounted = false;
+      controller.abort();
+      clearTimeout(timeoutId);
     };
   }, [location]);
 

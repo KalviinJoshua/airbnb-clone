@@ -235,8 +235,12 @@ export default function ListingDetails() {
           <div className="gallery-primary-image-wrapper">
             <img
               src={primaryImage}
-              alt={listing.title}
+              alt={`Main photo of ${listing.title} in ${listing.location}`}
               className="gallery-primary-image"
+              loading="eager"
+              decoding="async"
+              width="800"
+              height="500"
               onError={(e) => {
                 e.target.src = FALLBACK_IMAGE;
               }}
@@ -248,8 +252,12 @@ export default function ListingDetails() {
               <div className="gallery-secondary-image-wrapper">
                 <img
                   src={secondaryImage1}
-                  alt={`${listing.title} preview 2`}
+                  alt={`Interior view of ${listing.title}`}
                   className="gallery-secondary-image"
+                  loading="lazy"
+                  decoding="async"
+                  width="400"
+                  height="250"
                   onError={(e) => {
                     e.target.src = SECONDARY_FALLBACKS[0];
                   }}
@@ -258,8 +266,12 @@ export default function ListingDetails() {
               <div className="gallery-secondary-image-wrapper">
                 <img
                   src={secondaryImage2}
-                  alt={`${listing.title} preview 3`}
+                  alt={`Living space of ${listing.title}`}
                   className="gallery-secondary-image"
+                  loading="lazy"
+                  decoding="async"
+                  width="400"
+                  height="250"
                   onError={(e) => {
                     e.target.src = SECONDARY_FALLBACKS[1];
                   }}

@@ -7,8 +7,14 @@ import { useAuth } from '../context/AuthContext';
  * Displays the Airbnb brand logo, role-aware navigation links, and dynamic user authentication state.
  */
 export default function Navbar() {
-  const { user, isAuthenticated, isHost, logout } = useAuth();
+  const { user, isAuthenticated, isHost, upgradeToHost, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [hostPasscode, setHostPasscode] = useState('');
+  const [upgradeError, setUpgradeError] = useState('');
+  const [upgradeSuccess, setUpgradeSuccess] = useState('');
+  const [isUpgrading, setIsUpgrading] = useState(false);
+
   const menuRef = useRef(null);
   const navigate = useNavigate();
 
@@ -27,6 +33,42 @@ export default function Navbar() {
     setMenuOpen(false);
     logout();
     navigate('/');
+  };
+
+  const handleOpenUpgrade = () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    setHostPasscode('');
+    setUpgradeError('');
+    setUpgradeSuccess('');
+    setIsUpgradeModalOpen(true);
+  };
+
+  const handleUpgradeSubmit = async (e) => {
+    e.preventDefault();
+    setUpgradeError('');
+    setUpgradeSuccess('');
+
+    if (!hostPasscode.trim()) {
+      setUpgradeError('Please enter the host authorization passcode.');
+      return;
+    }
+
+    try {
+      setIsUpgrading(true);
+      const res = await upgradeToHost(hostPasscode.trim());
+      setUpgradeSuccess(res.message || 'Host privileges successfully activated!');
+      setTimeout(() => {
+        setIsUpgradeModalOpen(false);
+        navigate('/host/dashboard');
+      }, 1200);
+    } catch (err) {
+      setUpgradeError(err.message || 'Failed to activate host role. Check passcode.');
+    } finally {
+      setIsUpgrading(false);
+    }
   };
 
   return (
@@ -69,15 +111,8 @@ export default function Navbar() {
             <button
               type="button"
               className="nav-link"
-              onClick={() => {
-                if (!isAuthenticated) {
-                  navigate('/register');
-                } else {
-                  alert(
-                    'To access Host features, please sign up or log into an account registered with the Host role.'
-                  );
-                }
-              }}
+              onClick={handleOpenUpgrade}
+              title="Publish and host property accommodations"
             >
               Airbnb your home
             </button>
@@ -124,7 +159,7 @@ export default function Navbar() {
                     </div>
                     <div className="dropdown-divider" />
 
-                    {isHost && (
+                    {isHost ? (
                       <Link
                         to="/host/dashboard"
                         className="dropdown-item dropdown-item-bold"
@@ -133,6 +168,18 @@ export default function Navbar() {
                       >
                         Host Dashboard
                       </Link>
+                    ) : (
+                      <button
+                        type="button"
+                        className="dropdown-item dropdown-item-bold"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          handleOpenUpgrade();
+                        }}
+                        role="menuitem"
+                      >
+                        Become a Host
+                      </button>
                     )}
 
                     <Link
@@ -196,6 +243,78 @@ export default function Navbar() {
           </div>
         </div>
       </div>
+
+      {/* Become a Host Elevation Modal */}
+      {isUpgradeModalOpen && (
+        <div className="modal-overlay" role="dialog" aria-modal="true">
+          <div className="modal-card">
+            <div className="modal-header">
+              <h2 className="modal-title">Become an Airbnb Host</h2>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setIsUpgradeModalOpen(false)}
+                disabled={isUpgrading}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p style={{ color: 'var(--text-secondary)', margin: '12px 0 20px', lineHeight: '1.5' }}>
+              Hosting privileges allow you to publish properties and manage reservations on the Airbnb Clone platform. Please enter your host authorization passcode.
+            </p>
+
+            {upgradeSuccess && (
+              <div className="booking-success-alert" style={{ marginBottom: '16px' }}>
+                <span>{upgradeSuccess}</span>
+              </div>
+            )}
+
+            {upgradeError && (
+              <div className="auth-error-alert" style={{ marginBottom: '16px' }}>
+                <span>{upgradeError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleUpgradeSubmit}>
+              <div className="form-group" style={{ marginBottom: '20px' }}>
+                <label htmlFor="modalHostPasscode" className="form-label">
+                  Host Passcode
+                </label>
+                <input
+                  id="modalHostPasscode"
+                  type="password"
+                  className="form-input"
+                  placeholder="Enter administrator host passcode"
+                  value={hostPasscode}
+                  onChange={(e) => setHostPasscode(e.target.value)}
+                  autoFocus
+                  required
+                />
+              </div>
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="state-btn state-btn-secondary"
+                  onClick={() => setIsUpgradeModalOpen(false)}
+                  disabled={isUpgrading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-auth-submit"
+                  style={{ width: 'auto', padding: '12px 24px' }}
+                  disabled={isUpgrading}
+                >
+                  {isUpgrading ? 'Activating Host...' : 'Activate Host Role'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

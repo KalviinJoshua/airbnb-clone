@@ -22,14 +22,17 @@ export default function ListingCard({ listing }) {
     <Link
       to={`/listings/${listing._id}`}
       className="listing-card"
-      aria-label={`View details for ${listing.title}`}
+      aria-label={`View details for ${listing.title} in ${listing.location}`}
     >
       <div className="listing-card-image-wrapper">
         <img
           src={imgSrc}
-          alt={listing.title}
+          alt={`Stay at ${listing.title} in ${listing.location}`}
           className="listing-card-image"
           loading="lazy"
+          decoding="async"
+          width="400"
+          height="380"
           onError={() => setImgSrc(FALLBACK_IMAGE)}
         />
         <div className="listing-card-badge">Guest favourite</div>

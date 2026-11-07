@@ -276,8 +276,12 @@ export default function HostDashboard() {
                   <div className="host-listing-media">
                     <img
                       src={imageSrc}
-                      alt={listing.title}
+                      alt={`Property listing cover photo: ${listing.title}`}
                       className="host-listing-image"
+                      loading="lazy"
+                      decoding="async"
+                      width="400"
+                      height="200"
                       onError={(e) => {
                         e.target.src = FALLBACK_IMAGE;
                       }}
