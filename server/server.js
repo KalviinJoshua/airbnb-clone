@@ -3,6 +3,9 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./src/config/db');
 const authRoutes = require('./src/routes/authRoutes');
+const listingRoutes = require('./src/routes/listingRoutes');
+const bookingRoutes = require('./src/routes/bookingRoutes');
+const reviewRoutes = require('./src/routes/reviewRoutes');
 
 // Load environment variables first — must happen before anything reads process.env
 dotenv.config();
@@ -31,8 +34,11 @@ app.get('/', (req, res) => {
   res.json({ message: 'Airbnb Clone API is running.' });
 });
 
-// POST /api/auth/register — create a new user account
+// API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/listings', listingRoutes);
+app.use('/api/bookings', bookingRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // 404 handler — catches any request to an undefined route
 app.use((req, res) => {
