@@ -6,22 +6,41 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 /**
+ * Helper to retrieve the stored JWT authentication token.
+ * @returns {string|null}
+ */
+export function getStoredToken() {
+  return localStorage.getItem('token');
+}
+
+/**
  * Generic request helper with error handling for both network and HTTP errors.
+ * Attaches the JWT Bearer token only when requiresAuth is true.
  *
  * @param {string} endpoint - Path relative to API_BASE_URL (e.g. '/listings')
  * @param {RequestInit} [options={}] - Standard fetch options
+ * @param {boolean} [requiresAuth=false] - Whether to include the Authorization header
  * @returns {Promise<any>}
  */
-async function request(endpoint, options = {}) {
+async function request(endpoint, options = {}, requiresAuth = false) {
   const url = `${API_BASE_URL}${endpoint}`;
+
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
+
+  if (requiresAuth) {
+    const token = getStoredToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+  }
 
   try {
     const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
       ...options,
+      headers,
     });
 
     const data = await response.json().catch(() => null);
@@ -37,7 +56,7 @@ async function request(endpoint, options = {}) {
 
     return data;
   } catch (error) {
-    // If the browser fails to connect (e.g. server is down or CORS blocked)
+    // If the browser fails to connect (server down or network disconnected)
     if (error.name === 'TypeError' && error.message.toLowerCase().includes('fetch')) {
       const networkError = new Error(
         'Unable to reach the backend server. Please ensure the server is running on ' +
@@ -50,13 +69,52 @@ async function request(endpoint, options = {}) {
   }
 }
 
+/* ==========================================================================
+   Authentication Endpoints (Public)
+   ========================================================================== */
+
+/**
+ * Authenticate user with email and password.
+ * @param {Object} credentials - { email, password }
+ * @returns {Promise<{ message: string, token: string, user: Object }>}
+ */
+export async function loginUser(credentials) {
+  return request(
+    '/auth/login',
+    {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    },
+    false
+  );
+}
+
+/**
+ * Register a new user account.
+ * @param {Object} userData - { name, email, password }
+ * @returns {Promise<{ message: string, user: Object }>}
+ */
+export async function registerUser(userData) {
+  return request(
+    '/auth/register',
+    {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    },
+    false
+  );
+}
+
+/* ==========================================================================
+   Listings Endpoints (Public)
+   ========================================================================== */
+
 /**
  * Fetch all property listings.
  * @returns {Promise<Array>} Array of listing objects
  */
 export async function fetchListings() {
-  const data = await request('/listings');
-  // Backend returns { listings: [...] }
+  const data = await request('/listings', {}, false);
   return data.listings || [];
 }
 
@@ -66,7 +124,77 @@ export async function fetchListings() {
  * @returns {Promise<Object>} Listing document
  */
 export async function fetchListingById(id) {
-  const data = await request(`/listings/${id}`);
-  // Backend returns { listing: {...} }
+  const data = await request(`/listings/${id}`, {}, false);
   return data.listing;
+}
+
+/* ==========================================================================
+   Booking Endpoints (Protected - Require JWT)
+   ========================================================================== */
+
+/**
+ * Create a new booking for a listing.
+ * @param {Object} bookingData - { listing, checkIn, checkOut }
+ * @returns {Promise<{ message: string, booking: Object }>}
+ */
+export async function createBooking(bookingData) {
+  return request(
+    '/bookings',
+    {
+      method: 'POST',
+      body: JSON.stringify(bookingData),
+    },
+    true
+  );
+}
+
+/**
+ * Fetch all bookings belonging to the authenticated user.
+ * @returns {Promise<Array>} Array of booking objects
+ */
+export async function fetchMyBookings() {
+  const data = await request('/bookings', {}, true);
+  return data.bookings || [];
+}
+
+/**
+ * Fetch a single booking by ID.
+ * @param {string} id - Booking ObjectId
+ * @returns {Promise<Object>} Booking document
+ */
+export async function fetchBookingById(id) {
+  const data = await request(`/bookings/${id}`, {}, true);
+  return data.booking;
+}
+
+/**
+ * Update checkIn and checkOut dates for a booking.
+ * @param {string} id - Booking ObjectId
+ * @param {Object} updateData - { checkIn, checkOut }
+ * @returns {Promise<{ message: string, booking: Object }>}
+ */
+export async function updateBooking(id, updateData) {
+  return request(
+    `/bookings/${id}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(updateData),
+    },
+    true
+  );
+}
+
+/**
+ * Cancel/delete a booking.
+ * @param {string} id - Booking ObjectId
+ * @returns {Promise<{ message: string }>}
+ */
+export async function cancelBooking(id) {
+  return request(
+    `/bookings/${id}`,
+    {
+      method: 'DELETE',
+    },
+    true
+  );
 }

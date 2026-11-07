@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { fetchListingById } from '../services/api';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
+import { fetchListingById, createBooking } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80';
@@ -11,14 +12,43 @@ const SECONDARY_FALLBACKS = [
 ];
 
 /**
+ * Format today's date as YYYY-MM-DD for HTML input min attributes
+ */
+function getTodayString() {
+  const today = new Date();
+  return today.toISOString().split('T')[0];
+}
+
+/**
+ * Get date string incremented by 1 day
+ */
+function getNextDayString(dateStr) {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  date.setDate(date.getDate() + 1);
+  return date.toISOString().split('T')[0];
+}
+
+/**
  * ListingDetails Page Component
- * Shows complete information for a single accommodation listing.
+ * Shows complete information for an accommodation and enables authenticated reservations.
  */
 export default function ListingDetails() {
   const { id } = useParams();
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Booking form state
+  const [checkIn, setCheckIn] = useState('');
+  const [checkOut, setCheckOut] = useState('');
+  const [bookingError, setBookingError] = useState('');
+  const [bookingSuccess, setBookingSuccess] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const loadListing = async () => {
     try {
@@ -40,7 +70,79 @@ export default function ListingDetails() {
     loadListing();
   }, [id]);
 
-  // Handle Loading
+  // Calculate nights and estimated total whenever dates change
+  const { nights, estimatedTotal } = useMemo(() => {
+    if (!checkIn || !checkOut || !listing?.pricePerNight) {
+      return { nights: 0, estimatedTotal: 0 };
+    }
+
+    const start = new Date(checkIn);
+    const end = new Date(checkOut);
+
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+
+    const diffInMs = end.getTime() - start.getTime();
+    if (diffInMs <= 0) {
+      return { nights: 0, estimatedTotal: 0 };
+    }
+
+    const calculatedNights = Math.round(diffInMs / (1000 * 60 * 60 * 24));
+    const total = calculatedNights * listing.pricePerNight;
+
+    return { nights: calculatedNights, estimatedTotal: total };
+  }, [checkIn, checkOut, listing]);
+
+  const handleBookingSubmit = async (e) => {
+    e.preventDefault();
+    setBookingError('');
+    setBookingSuccess(null);
+
+    // Require authentication
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: location } });
+      return;
+    }
+
+    // Validation
+    if (!checkIn || !checkOut) {
+      setBookingError('Please select both check-in and check-out dates.');
+      return;
+    }
+
+    const start = new Date(checkIn);
+    const end = new Date(checkOut);
+    if (end <= start) {
+      setBookingError('Check-out date must be later than check-in date.');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const result = await createBooking({
+        listing: listing._id,
+        checkIn,
+        checkOut,
+      });
+
+      setBookingSuccess(result.message || 'Reservation confirmed successfully!');
+      // Reset dates after successful booking
+      setCheckIn('');
+      setCheckOut('');
+    } catch (err) {
+      if (err.status === 409) {
+        setBookingError(
+          'The selected dates are unavailable for this listing. Please choose different dates.'
+        );
+      } else {
+        setBookingError(err.message || 'Failed to complete booking. Please try again.');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle Loading State
   if (loading) {
     return (
       <div className="container">
@@ -52,7 +154,7 @@ export default function ListingDetails() {
     );
   }
 
-  // Handle Error / Not Found
+  // Handle Error / Not Found State
   if (error || !listing) {
     return (
       <div className="container">
@@ -93,7 +195,6 @@ export default function ListingDetails() {
     );
   }
 
-  // Determine images to display
   const images = listing.images && listing.images.length > 0 ? listing.images : [FALLBACK_IMAGE];
   const primaryImage = images[0] || FALLBACK_IMAGE;
   const secondaryImage1 = images[1] || SECONDARY_FALLBACKS[0];
@@ -166,7 +267,7 @@ export default function ListingDetails() {
           )}
         </div>
 
-        {/* Main Content Grid: Information + Sticky Booking Card */}
+        {/* Main Content Grid: Information + Functional Booking Card */}
         <div className="details-content-grid">
           {/* Left Column: Details & Amenities */}
           <div className="details-main-info">
@@ -225,63 +326,152 @@ export default function ListingDetails() {
             </div>
           </div>
 
-          {/* Right Column: Sticky Booking Widget */}
+          {/* Right Column: Functional Sticky Booking Widget */}
           <aside>
             <div className="booking-widget-card">
               <div className="widget-price-header">
                 <div>
-                  <span className="widget-price-large">${listing.pricePerNight}</span>
+                  <span className="widget-price-large">
+                    ₹{listing.pricePerNight?.toLocaleString('en-IN') || listing.pricePerNight}
+                  </span>
                   <span className="widget-price-unit"> / night</span>
                 </div>
                 <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>★ 4.98</span>
               </div>
 
-              {/* Date selection mockup */}
-              <div className="widget-dates-box">
-                <div className="widget-date-field">
-                  <div className="widget-date-label">Check-in</div>
-                  <div className="widget-date-val">Select date</div>
+              {/* Success Notification */}
+              {bookingSuccess && (
+                <div className="booking-success-alert" role="status">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                    <polyline points="22 4 12 14.01 9 11.01" />
+                  </svg>
+                  <div>
+                    <strong>{bookingSuccess}</strong>
+                    <div style={{ marginTop: '4px' }}>
+                      <Link to="/my-bookings" className="alert-action-link">
+                        View in My Bookings →
+                      </Link>
+                    </div>
+                  </div>
                 </div>
-                <div className="widget-date-field">
-                  <div className="widget-date-label">Check-out</div>
-                  <div className="widget-date-val">Select date</div>
-                </div>
-              </div>
+              )}
 
-              {/* Book Now button */}
-              <button
-                type="button"
-                className="btn-book-placeholder"
-                onClick={() =>
-                  alert(
-                    'Booking functionality is coming in Module 3 (Authentication & Bookings)!'
-                  )
-                }
-              >
-                <span>Reserve</span>
-              </button>
+              {/* Error Notification */}
+              {bookingError && (
+                <div className="auth-error-alert" role="alert">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  <span>{bookingError}</span>
+                </div>
+              )}
 
-              <p className="widget-notice">You won't be charged yet</p>
+              {/* Booking Form */}
+              <form onSubmit={handleBookingSubmit}>
+                <div className="widget-dates-box">
+                  <div className="widget-date-field">
+                    <label htmlFor="check-in-date" className="widget-date-label">
+                      Check-in
+                    </label>
+                    <input
+                      id="check-in-date"
+                      type="date"
+                      className="widget-date-input"
+                      min={getTodayString()}
+                      value={checkIn}
+                      onChange={(e) => {
+                        setCheckIn(e.target.value);
+                        if (checkOut && e.target.value >= checkOut) {
+                          setCheckOut('');
+                        }
+                      }}
+                      required
+                    />
+                  </div>
 
-              {/* Price Calculation breakdown mockup */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid var(--border-light)', paddingTop: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
-                  <span style={{ textDecoration: 'underline' }}>${listing.pricePerNight} × 5 nights</span>
-                  <span>${listing.pricePerNight * 5}</span>
+                  <div className="widget-date-field">
+                    <label htmlFor="check-out-date" className="widget-date-label">
+                      Check-out
+                    </label>
+                    <input
+                      id="check-out-date"
+                      type="date"
+                      className="widget-date-input"
+                      min={getNextDayString(checkIn) || getTodayString()}
+                      value={checkOut}
+                      onChange={(e) => setCheckOut(e.target.value)}
+                      disabled={!checkIn}
+                      required
+                    />
+                  </div>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
-                  <span style={{ textDecoration: 'underline' }}>Cleaning fee</span>
-                  <span>$60</span>
+
+                {/* Reserve Button */}
+                <button
+                  type="submit"
+                  className="btn-book-placeholder"
+                  disabled={isSubmitting}
+                  style={{ marginTop: '16px' }}
+                >
+                  {isSubmitting ? (
+                    'Confirming reservation...'
+                  ) : !isAuthenticated ? (
+                    'Log in to Reserve'
+                  ) : (
+                    'Reserve'
+                  )}
+                </button>
+              </form>
+
+              <p className="widget-notice">
+                {isAuthenticated
+                  ? "You won't be charged until confirmed"
+                  : 'You will be redirected to log in'}
+              </p>
+
+              {/* Price Calculation breakdown (dynamically updated) */}
+              {nights > 0 && (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                    borderTop: '1px solid var(--border-light)',
+                    paddingTop: '16px',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      color: 'var(--text-secondary)',
+                    }}
+                  >
+                    <span style={{ textDecoration: 'underline' }}>
+                      ₹{listing.pricePerNight?.toLocaleString('en-IN')} × {nights}{' '}
+                      {nights === 1 ? 'night' : 'nights'}
+                    </span>
+                    <span>₹{estimatedTotal.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      fontWeight: 700,
+                      fontSize: '1.05rem',
+                      borderTop: '1px solid var(--border-light)',
+                      paddingTop: '12px',
+                      marginTop: '4px',
+                    }}
+                  >
+                    <span>Total (before taxes)</span>
+                    <span>₹{estimatedTotal.toLocaleString('en-IN')}</span>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
-                  <span style={{ textDecoration: 'underline' }}>Airbnb service fee</span>
-                  <span>$45</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1.05rem', borderTop: '1px solid var(--border-light)', paddingTop: '12px', marginTop: '4px' }}>
-                  <span>Total before taxes</span>
-                  <span>${listing.pricePerNight * 5 + 105}</span>
-                </div>
-              </div>
+              )}
             </div>
           </aside>
         </div>

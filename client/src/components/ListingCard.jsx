@@ -58,7 +58,9 @@ export default function ListingCard({ listing }) {
         <p className="listing-card-host">Hosted by {hostName}</p>
 
         <div className="listing-card-price-row">
-          <span className="listing-card-price">${listing.pricePerNight}</span>
+          <span className="listing-card-price">
+            ₹{listing.pricePerNight?.toLocaleString('en-IN') || listing.pricePerNight}
+          </span>
           <span className="listing-card-unit">/ night</span>
         </div>
       </div>

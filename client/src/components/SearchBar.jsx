@@ -52,26 +52,26 @@ export default function SearchBar({
 
           {/* Price Range Filter */}
           <div className="search-input-group">
-            <label className="search-label">Price per night</label>
+            <label className="search-label">Price per night (₹)</label>
             <div className="price-inputs">
               <input
                 type="number"
                 min="0"
                 className="price-mini-input"
-                placeholder="Min $"
+                placeholder="Min ₹"
                 value={minPrice}
                 onChange={(e) => setMinPrice(e.target.value)}
-                aria-label="Minimum price per night"
+                aria-label="Minimum price per night in INR"
               />
               <span className="price-separator">–</span>
               <input
                 type="number"
                 min="0"
                 className="price-mini-input"
-                placeholder="Max $"
+                placeholder="Max ₹"
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(e.target.value)}
-                aria-label="Maximum price per night"
+                aria-label="Maximum price per night in INR"
               />
             </div>
           </div>
