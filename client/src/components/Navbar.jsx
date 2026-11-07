@@ -4,10 +4,10 @@ import { useAuth } from '../context/AuthContext';
 
 /**
  * Navbar Component
- * Displays the Airbnb brand logo, navigation links, and dynamic user authentication state.
+ * Displays the Airbnb brand logo, role-aware navigation links, and dynamic user authentication state.
  */
 export default function Navbar() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isHost, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const navigate = useNavigate();
@@ -52,19 +52,36 @@ export default function Navbar() {
             Explore
           </Link>
 
+          {/* Role-based Host link */}
+          {isAuthenticated && isHost && (
+            <Link to="/host/dashboard" className="nav-link nav-link-highlight">
+              Host Dashboard
+            </Link>
+          )}
+
           {isAuthenticated && (
             <Link to="/my-bookings" className="nav-link">
               My Bookings
             </Link>
           )}
 
-          <button
-            type="button"
-            className="nav-link"
-            onClick={() => alert('Host listing management will be available in Module 4!')}
-          >
-            Airbnb your home
-          </button>
+          {!isHost && (
+            <button
+              type="button"
+              className="nav-link"
+              onClick={() => {
+                if (!isAuthenticated) {
+                  navigate('/register');
+                } else {
+                  alert(
+                    'To access Host features, please sign up or log into an account registered with the Host role.'
+                  );
+                }
+              }}
+            >
+              Airbnb your home
+            </button>
+          )}
 
           {/* User profile dropdown pill */}
           <div className="user-menu-wrapper" ref={menuRef}>
@@ -97,10 +114,27 @@ export default function Navbar() {
                 {isAuthenticated ? (
                   <>
                     <div className="dropdown-user-info">
-                      <span className="dropdown-user-name">{user?.name}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span className="dropdown-user-name">{user?.name}</span>
+                        <span className={`user-role-badge role-${user?.role || 'user'}`}>
+                          {user?.role || 'user'}
+                        </span>
+                      </div>
                       <span className="dropdown-user-email">{user?.email}</span>
                     </div>
                     <div className="dropdown-divider" />
+
+                    {isHost && (
+                      <Link
+                        to="/host/dashboard"
+                        className="dropdown-item dropdown-item-bold"
+                        onClick={() => setMenuOpen(false)}
+                        role="menuitem"
+                      >
+                        Host Dashboard
+                      </Link>
+                    )}
+
                     <Link
                       to="/my-bookings"
                       className="dropdown-item"
@@ -109,6 +143,7 @@ export default function Navbar() {
                     >
                       My Bookings
                     </Link>
+
                     <Link
                       to="/"
                       className="dropdown-item"
@@ -152,7 +187,7 @@ export default function Navbar() {
                       onClick={() => setMenuOpen(false)}
                       role="menuitem"
                     >
-                      Help Center
+                      Explore stays
                     </Link>
                   </>
                 )}

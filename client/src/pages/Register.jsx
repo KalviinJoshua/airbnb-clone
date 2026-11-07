@@ -10,6 +10,7 @@ export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('user');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -48,7 +49,7 @@ export default function Register() {
 
     try {
       setIsSubmitting(true);
-      await register(name.trim(), email.trim(), password);
+      await register(name.trim(), email.trim(), password, role);
       navigate(from, { replace: true });
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
@@ -123,6 +124,37 @@ export default function Register() {
               autoComplete="new-password"
               required
             />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">I want to use Airbnb as:</label>
+            <div className="role-selector-group">
+              <label className={`role-option-card ${role === 'user' ? 'active' : ''}`}>
+                <input
+                  type="radio"
+                  name="role"
+                  value="user"
+                  checked={role === 'user'}
+                  onChange={() => setRole('user')}
+                  className="role-radio"
+                />
+                <span className="role-option-title">Guest</span>
+                <span className="role-option-desc">Book stays & travel</span>
+              </label>
+
+              <label className={`role-option-card ${role === 'host' ? 'active' : ''}`}>
+                <input
+                  type="radio"
+                  name="role"
+                  value="host"
+                  checked={role === 'host'}
+                  onChange={() => setRole('host')}
+                  className="role-radio"
+                />
+                <span className="role-option-title">Host</span>
+                <span className="role-option-desc">List & host properties</span>
+              </label>
+            </div>
           </div>
 
           <button

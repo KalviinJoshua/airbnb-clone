@@ -91,7 +91,7 @@ export async function loginUser(credentials) {
 
 /**
  * Register a new user account.
- * @param {Object} userData - { name, email, password }
+ * @param {Object} userData - { name, email, password, role }
  * @returns {Promise<{ message: string, user: Object }>}
  */
 export async function registerUser(userData) {
@@ -106,11 +106,11 @@ export async function registerUser(userData) {
 }
 
 /* ==========================================================================
-   Listings Endpoints (Public)
+   Listings Endpoints
    ========================================================================== */
 
 /**
- * Fetch all property listings.
+ * Fetch all property listings. (Public)
  * @returns {Promise<Array>} Array of listing objects
  */
 export async function fetchListings() {
@@ -119,13 +119,61 @@ export async function fetchListings() {
 }
 
 /**
- * Fetch a single property listing by its ID.
+ * Fetch a single property listing by its ID. (Public)
  * @param {string} id - Listing MongoDB ObjectId
  * @returns {Promise<Object>} Listing document
  */
 export async function fetchListingById(id) {
   const data = await request(`/listings/${id}`, {}, false);
   return data.listing;
+}
+
+/**
+ * Create a new property listing. (Protected - Host only)
+ * @param {Object} listingData - { title, description, location, pricePerNight, images }
+ * @returns {Promise<{ message: string, listing: Object }>}
+ */
+export async function createListing(listingData) {
+  return request(
+    '/listings',
+    {
+      method: 'POST',
+      body: JSON.stringify(listingData),
+    },
+    true
+  );
+}
+
+/**
+ * Update an existing property listing. (Protected - Host only)
+ * @param {string} id - Listing ObjectId
+ * @param {Object} listingData - { title, description, location, pricePerNight, images }
+ * @returns {Promise<{ message: string, listing: Object }>}
+ */
+export async function updateListing(id, listingData) {
+  return request(
+    `/listings/${id}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(listingData),
+    },
+    true
+  );
+}
+
+/**
+ * Delete a property listing. (Protected - Host only)
+ * @param {string} id - Listing ObjectId
+ * @returns {Promise<{ message: string }>}
+ */
+export async function deleteListing(id) {
+  return request(
+    `/listings/${id}`,
+    {
+      method: 'DELETE',
+    },
+    true
+  );
 }
 
 /* ==========================================================================
@@ -192,6 +240,68 @@ export async function updateBooking(id, updateData) {
 export async function cancelBooking(id) {
   return request(
     `/bookings/${id}`,
+    {
+      method: 'DELETE',
+    },
+    true
+  );
+}
+
+/* ==========================================================================
+   Reviews Endpoints
+   ========================================================================== */
+
+/**
+ * Fetch all reviews for a listing. (Public)
+ * @param {string} listingId - Listing ObjectId
+ * @returns {Promise<Array>} Array of review objects
+ */
+export async function fetchListingReviews(listingId) {
+  const data = await request(`/reviews/listing/${listingId}`, {}, false);
+  return data.reviews || [];
+}
+
+/**
+ * Submit a new review for a listing. (Protected - Completed stay required)
+ * @param {Object} reviewData - { listing, rating, comment }
+ * @returns {Promise<{ message: string, review: Object }>}
+ */
+export async function createReview(reviewData) {
+  return request(
+    '/reviews',
+    {
+      method: 'POST',
+      body: JSON.stringify(reviewData),
+    },
+    true
+  );
+}
+
+/**
+ * Update an existing review. (Protected - Review author only)
+ * @param {string} id - Review ObjectId
+ * @param {Object} updateData - { rating, comment }
+ * @returns {Promise<{ message: string, review: Object }>}
+ */
+export async function updateReview(id, updateData) {
+  return request(
+    `/reviews/${id}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(updateData),
+    },
+    true
+  );
+}
+
+/**
+ * Delete an existing review. (Protected - Review author only)
+ * @param {string} id - Review ObjectId
+ * @returns {Promise<{ message: string }>}
+ */
+export async function deleteReview(id) {
+  return request(
+    `/reviews/${id}`,
     {
       method: 'DELETE',
     },

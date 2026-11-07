@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ListingDetails from './pages/ListingDetails';
 import MyBookings from './pages/MyBookings';
+import HostDashboard from './pages/HostDashboard';
 
 /**
  * 404 NotFound Page Component
@@ -79,6 +80,14 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <MyBookings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/host/dashboard"
+              element={
+                <ProtectedRoute requiredRole="host">
+                  <HostDashboard />
                 </ProtectedRoute>
               }
             />

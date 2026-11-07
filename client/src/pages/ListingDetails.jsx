@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { fetchListingById, createBooking } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import PropertyMap from '../components/PropertyMap';
+import ListingReviews from '../components/ListingReviews';
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80';
@@ -324,6 +326,12 @@ export default function ListingDetails() {
                 </div>
               </div>
             </div>
+
+            {/* Map Integration (OpenStreetMap + Leaflet) */}
+            <PropertyMap location={listing.location} title={listing.title} />
+
+            {/* Reviews & Ratings Section */}
+            <ListingReviews listingId={listing._id} />
           </div>
 
           {/* Right Column: Functional Sticky Booking Widget */}

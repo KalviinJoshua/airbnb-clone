@@ -9,7 +9,7 @@ const User = require('../models/User.js');
  */
 const registerUser = async (req, res, next) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
 
     // 1. Validate that all fields are provided
     if (!name || !email || !password) {
@@ -39,11 +39,12 @@ const registerUser = async (req, res, next) => {
     // 4. Hash the password with 12 salt rounds
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // 5. Create and save the new user
+    // 5. Create and save the new user (supports 'user' or 'host' role)
     const newUser = new User({
       name,
       email: normalizedEmail,
       password: hashedPassword,
+      role: role === 'host' ? 'host' : 'user',
     });
 
     await newUser.save();

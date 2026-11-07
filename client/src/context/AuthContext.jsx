@@ -57,8 +57,8 @@ export function AuthProvider({ children }) {
   /**
    * Register a new account and automatically log in
    */
-  const register = async (name, email, password) => {
-    const regData = await registerUser({ name, email, password });
+  const register = async (name, email, password, role = 'user') => {
+    const regData = await registerUser({ name, email, password, role });
     // After registration, authenticate immediately to obtain JWT token
     const loginData = await login(email, password);
     return { ...regData, ...loginData };
@@ -78,6 +78,7 @@ export function AuthProvider({ children }) {
     user,
     token,
     isAuthenticated: Boolean(token && user),
+    isHost: user?.role === 'host',
     loading,
     login,
     register,
