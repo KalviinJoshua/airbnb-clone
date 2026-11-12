@@ -72,28 +72,32 @@ flowchart TD
 
 ## Project Structure
 
-```text
-airbnb-clone/
-â”œâ”€â”€ client/                    # React/Vite frontend
-â”‚   â”œâ”€â”€ src/
-â”‚   â”‚   â”œâ”€â”€ components/       # Reusable UI components
-â”‚   â”‚   â”œâ”€â”€ context/          # Authentication state
-â”‚   â”‚   â”œâ”€â”€ pages/            # Explore, listing, auth, bookings, host dashboard
-â”‚   â”‚   â””â”€â”€ App.jsx           # Client routes
-â”‚   â”œâ”€â”€ .env.example
-â”‚   â”œâ”€â”€ vercel.json            # SPA fallback routing
-â”‚   â””â”€â”€ package.json
-â”œâ”€â”€ server/                    # Express/Mongoose API
-â”‚   â”œâ”€â”€ src/
-â”‚   â”‚   â”œâ”€â”€ config/           # Database and environment validation
-â”‚   â”‚   â”œâ”€â”€ controllers/      # Request handlers / business logic
-â”‚   â”‚   â”œâ”€â”€ middleware/       # Authentication and role enforcement
-â”‚   â”‚   â””â”€â”€ routes/           # Auth, listings, bookings, reviews
-â”‚   â”œâ”€â”€ server.js             # Express entry point
-â”‚   â”œâ”€â”€ .env.example
-â”‚   â””â”€â”€ package.json
-â””â”€â”€ README.md
-```
+    airbnb-clone/
+    |
+    +-- client/
+    |   +-- src/
+    |   |   +-- components/
+    |   |   +-- context/
+    |   |   +-- pages/
+    |   |   +-- App.jsx
+    |   +-- .env.example
+    |   +-- vercel.json
+    |   +-- package.json
+    |
+    +-- server/
+    |   +-- src/
+    |   |   +-- config/
+    |   |   +-- controllers/
+    |   |   +-- middleware/
+    |   |   +-- routes/
+    |   +-- server.js
+    |   +-- .env.example
+    |   +-- package.json
+    |
+    +-- docs/
+    |   +-- screenshots/
+    |
+    +-- README.md
 
 ## API Reference
 
