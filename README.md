@@ -6,8 +6,6 @@
 
 A responsive, full-stack accommodation discovery and reservation application inspired by Airbnb. Guests can explore properties, view location maps, manage reservations, and read reviews. Authorized hosts can publish and manage their listings. The application is deployed with a React frontend on **Vercel**, an Express API on **Render**, and a **MongoDB Atlas** database.
 
-> **Disclaimer:** An independent educational project built during the Sapphire IQ internship. Not affiliated with, endorsed by, or operated by Airbnb, Inc.
-
 ## Live Links
 
 | Resource | URL |
