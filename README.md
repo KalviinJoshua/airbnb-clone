@@ -1,4 +1,4 @@
-# Airbnb Clone — Full-Stack Property Booking Platform
+# Airbnb Clone â€” Full-Stack Property Booking Platform
 
 **Sapphire IQ | Full Stack Developer Internship Project**
 
@@ -68,31 +68,31 @@ flowchart TD
     F --> M[Leaflet + OpenStreetMap<br/>Nominatim geocoding]
 ```
 
-**Typical booking flow:** The user signs in → opens a listing → selects dates → the frontend submits an authenticated booking request → the API validates availability and calculates pricing → MongoDB stores the reservation → My Bookings displays the result.
+**Typical booking flow:** The user signs in â†’ opens a listing â†’ selects dates â†’ the frontend submits an authenticated booking request â†’ the API validates availability and calculates pricing â†’ MongoDB stores the reservation â†’ My Bookings displays the result.
 
 ## Project Structure
 
 ```text
 airbnb-clone/
-├── client/                    # React/Vite frontend
-│   ├── src/
-│   │   ├── components/       # Reusable UI components
-│   │   ├── context/          # Authentication state
-│   │   ├── pages/            # Explore, listing, auth, bookings, host dashboard
-│   │   └── App.jsx           # Client routes
-│   ├── .env.example
-│   ├── vercel.json            # SPA fallback routing
-│   └── package.json
-├── server/                    # Express/Mongoose API
-│   ├── src/
-│   │   ├── config/           # Database and environment validation
-│   │   ├── controllers/      # Request handlers / business logic
-│   │   ├── middleware/       # Authentication and role enforcement
-│   │   └── routes/           # Auth, listings, bookings, reviews
-│   ├── server.js             # Express entry point
-│   ├── .env.example
-│   └── package.json
-└── README.md
+â”œâ”€â”€ client/                    # React/Vite frontend
+â”‚   â”œâ”€â”€ src/
+â”‚   â”‚   â”œâ”€â”€ components/       # Reusable UI components
+â”‚   â”‚   â”œâ”€â”€ context/          # Authentication state
+â”‚   â”‚   â”œâ”€â”€ pages/            # Explore, listing, auth, bookings, host dashboard
+â”‚   â”‚   â””â”€â”€ App.jsx           # Client routes
+â”‚   â”œâ”€â”€ .env.example
+â”‚   â”œâ”€â”€ vercel.json            # SPA fallback routing
+â”‚   â””â”€â”€ package.json
+â”œâ”€â”€ server/                    # Express/Mongoose API
+â”‚   â”œâ”€â”€ src/
+â”‚   â”‚   â”œâ”€â”€ config/           # Database and environment validation
+â”‚   â”‚   â”œâ”€â”€ controllers/      # Request handlers / business logic
+â”‚   â”‚   â”œâ”€â”€ middleware/       # Authentication and role enforcement
+â”‚   â”‚   â””â”€â”€ routes/           # Auth, listings, bookings, reviews
+â”‚   â”œâ”€â”€ server.js             # Express entry point
+â”‚   â”œâ”€â”€ .env.example
+â”‚   â””â”€â”€ package.json
+â””â”€â”€ README.md
 ```
 
 ## API Reference
@@ -210,7 +210,7 @@ npm run build
 
 ## Deployment
 
-### Frontend — Vercel
+### Frontend â€” Vercel
 1. Import the GitHub repository into Vercel.
 2. Set **Root Directory** to `client`.
 3. Framework: **Vite**; build command: `npm run build`; output directory: `dist`.
@@ -222,7 +222,7 @@ npm run build
 
 5. Deploy. `client/vercel.json` rewrites client-side routes to `index.html` to support direct navigation and refreshes.
 
-### Backend — Render
+### Backend â€” Render
 1. Create a Node.js web service connected to the GitHub repository.
 2. Set **Root Directory** to `server`.
 3. Build command: `npm install`; start command: `npm start`.
@@ -242,7 +242,7 @@ npm run build
 6. In MongoDB Atlas Network Access, allow the Render service's current outbound IP ranges, and maintain those entries if infrastructure changes. Avoid broad public access when practical.
 7. Verify the health endpoint and test frontend-to-API communication.
 
-### Database — MongoDB Atlas
+### Database â€” MongoDB Atlas
 - Create a cluster and database user with appropriate permissions.
 - Use the Atlas application connection string as `MONGO_URI`.
 - Configure network access for the deployed backend.
@@ -250,26 +250,23 @@ npm run build
 
 ## Screenshots
 
-Add real screenshots to `docs/screenshots/` before final submission, using these suggested names:
+### 1. Explore Page
+![Explore Page](docs/screenshots/explore.png)
 
-| Screenshot | What it should show |
-| --- | --- |
-| `explore.png` | Property search and listing cards |
-| `listing-details.png` | Listing information and reservation panel |
-| `map.png` | OpenStreetMap with property marker |
-| `my-bookings.png` | Booking management view (use non-sensitive demo data) |
-| `host-dashboard.png` | Host-owned listings and management actions |
-| `create-listing.png` | Listing creation form |
+### 2. Property Details
+![Listing Details](docs/screenshots/listing-details.png)
 
-Once images are committed, uncomment the following Markdown in this README:
+### 3. Interactive Property Map
+![Property Map](docs/screenshots/map.png)
 
-```markdown
-<!-- ![Explore page](docs/screenshots/explore.png) -->
-<!-- ![Listing details](docs/screenshots/listing-details.png) -->
-<!-- ![Property map](docs/screenshots/map.png) -->
-<!-- ![My Bookings](docs/screenshots/my-bookings.png) -->
-<!-- ![Host Dashboard](docs/screenshots/host-dashboard.png) -->
-```
+### 4. My Bookings
+![My Bookings](docs/screenshots/my-bookings.png)
+
+### 5. Host Dashboard
+![Host Dashboard](docs/screenshots/host-dashboard.png)
+
+### 6. Create New Listing
+![Create Listing](docs/screenshots/create-listing.png)
 
 ## Manual Test Results
 
@@ -314,7 +311,7 @@ These are **manual functional checks**, not a comprehensive penetration test or 
 ## Developer
 
 **D Kalviin Joshua**  
-Full Stack Developer Intern — **Sapphire IQ**  
+Full Stack Developer Intern â€” **Sapphire IQ**  
 B.Tech, Computer Science and Engineering  
 SRM Institute of Science and Technology
 
