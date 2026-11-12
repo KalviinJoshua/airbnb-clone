@@ -1,4 +1,4 @@
-# Airbnb Clone â€” Full-Stack Property Booking Platform
+# Airbnb Clone Full-Stack Property Booking Platform
 
 **Sapphire IQ | Full Stack Developer Internship Project**
 
